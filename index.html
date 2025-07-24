@@ -2,25 +2,40 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Ball in Spinning Hexagon</title>
     <style>
-        body {
+        * {
             margin: 0;
             padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
             background-color: #000;
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
             font-family: Arial, sans-serif;
+            overflow: hidden;
         }
+        
         #gameContainer {
             position: relative;
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
         }
+        
         #gameCanvas {
-            border: 1px solid #fff;
+            width: 100%;
+            height: auto;
+            max-width: 100%;
+            display: block;
+            background-color: #000;
         }
+        
         #instructions {
             position: absolute;
             top: 10px;
@@ -28,36 +43,72 @@
             color: white;
             font-size: 14px;
             pointer-events: none;
+            background-color: rgba(0, 0, 0, 0.5);
+            padding: 5px 10px;
+            border-radius: 5px;
+        }
+        
+        @media (max-width: 768px) {
+            #instructions {
+                font-size: 12px;
+                top: 5px;
+                left: 5px;
+                padding: 3px 8px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            #instructions {
+                font-size: 10px;
+                top: 3px;
+                left: 3px;
+                padding: 2px 6px;
+            }
         }
     </style>
 </head>
 <body>
     <div id="gameContainer">
-        <canvas id="gameCanvas" width="800" height="600"></canvas>
-        <div id="instructions">Left-click to add force to the ball</div>
+        <canvas id="gameCanvas"></canvas>
+        <div id="instructions">Tap to add upward force to the ball</div>
     </div>
 
     <script>
-        // Canvas setup
+        // Canvas setup with responsive sizing
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
+        
+        function resizeCanvas() {
+            const container = document.getElementById('gameContainer');
+            const maxWidth = Math.min(container.clientWidth, 800);
+            const maxHeight = window.innerHeight * 0.8;
+            
+            // Set canvas dimensions
+            canvas.width = maxWidth;
+            canvas.height = Math.min(maxWidth * 0.75, maxHeight);
+        }
+        
+        // Initial resize
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        // Game constants
         const WIDTH = canvas.width;
         const HEIGHT = canvas.height;
-
-        // Physics parameters
         const GRAVITY = 0.5;
         const FRICTION = 0.999;
         const ELASTICITY = 0.95;
         const ROTATION_SPEED = 0.01;
-        const MAX_VELOCITY = 15; // Limit maximum velocity
+        const MAX_VELOCITY = 20;
+        const UPWARD_FORCE = -8;
 
         // Ball properties
         let ball_pos = [WIDTH / 2, HEIGHT / 2];
         let ball_vel = [5, 0];
-        const ball_radius = 15;
+        const ball_radius = Math.max(10, Math.min(WIDTH, HEIGHT) * 0.02);
 
         // Hexagon properties
-        const hex_radius = 200;
+        const hex_radius = Math.min(WIDTH, HEIGHT) * 0.25;
         const hex_center = [WIDTH / 2, HEIGHT / 2];
         let hex_angle = 0;
 
@@ -190,6 +241,11 @@
         }
 
         function gameLoop() {
+            // Update canvas size if needed
+            if (canvas.width !== document.getElementById('gameContainer').clientWidth) {
+                resizeCanvas();
+            }
+
             // Clear canvas
             ctx.fillStyle = 'black';
             ctx.fillRect(0, 0, WIDTH, HEIGHT);
@@ -245,19 +301,32 @@
             ctx.fill();
         }
 
-        // Mouse click event
+        // Touch/click event
         canvas.addEventListener('click', (event) => {
-            const rect = canvas.getBoundingClientRect();
-            const x = event.clientX - rect.left;
-            const y = event.clientY - rect.top;
+            // Apply upward force
+            ball_vel[1] += UPWARD_FORCE;
             
-            // Add random force to ball
-            ball_vel[0] += (Math.random() - 0.5) * 20;
-            ball_vel[1] += (Math.random() - 0.5) * 20;
+            // Increase horizontal speed slightly with each click
+            ball_vel[0] *= 1.1;
+            ball_vel[1] *= 1.1;
             
-            // Immediately limit velocity after force is applied
+            // Limit velocity after force is applied
             ball_vel = limitVelocity(ball_vel);
         });
+
+        // Handle touch events for mobile
+        canvas.addEventListener('touchstart', (event) => {
+            event.preventDefault();
+            // Apply upward force
+            ball_vel[1] += UPWARD_FORCE;
+            
+            // Increase horizontal speed slightly with each tap
+            ball_vel[0] *= 1.1;
+            ball_vel[1] *= 1.1;
+            
+            // Limit velocity after force is applied
+            ball_vel = limitVelocity(ball_vel);
+        }, { passive: false });
 
         // Start game loop
         setInterval(gameLoop, 16);

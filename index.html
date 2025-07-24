@@ -49,6 +49,7 @@
         const FRICTION = 0.999;
         const ELASTICITY = 0.95;
         const ROTATION_SPEED = 0.01;
+        const MAX_VELOCITY = 15; // Limit maximum velocity
 
         // Ball properties
         let ball_pos = [WIDTH / 2, HEIGHT / 2];
@@ -138,6 +139,15 @@
             ];
         }
 
+        function limitVelocity(velocity) {
+            const speed = Math.hypot(velocity[0], velocity[1]);
+            if (speed > MAX_VELOCITY) {
+                velocity[0] = (velocity[0] / speed) * MAX_VELOCITY;
+                velocity[1] = (velocity[1] / speed) * MAX_VELOCITY;
+            }
+            return velocity;
+        }
+
         function handleCollision(hex_edges) {
             for (const edge of hex_edges) {
                 const [p1, p2] = edge;
@@ -194,6 +204,9 @@
             ball_vel[0] *= FRICTION;
             ball_vel[1] *= FRICTION;
 
+            // Limit velocity to prevent escaping
+            ball_vel = limitVelocity(ball_vel);
+
             // Update ball position
             ball_pos[0] += ball_vel[0];
             ball_pos[1] += ball_vel[1];
@@ -241,6 +254,9 @@
             // Add random force to ball
             ball_vel[0] += (Math.random() - 0.5) * 20;
             ball_vel[1] += (Math.random() - 0.5) * 20;
+            
+            // Immediately limit velocity after force is applied
+            ball_vel = limitVelocity(ball_vel);
         });
 
         // Start game loop
